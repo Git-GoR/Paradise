@@ -100,6 +100,10 @@ REAGENT SCANNER
 	origin_tech = "magnets=1;biotech=1"
 	var/mode = 1
 	var/advanced = FALSE
+	///Whether the scanner should show its output in the chat. When false, it will output on a TGUI popout.
+	var/outputToChat = FALSE
+	///The last person to be scanned
+	var/mob/living/carbon/human/lastPatient = null
 
 /obj/item/healthanalyzer/attack(mob/living/M, mob/living/user)
 	if((HAS_TRAIT(user, TRAIT_CLUMSY) || user.getBrainLoss() >= 60) && prob(50))
@@ -112,9 +116,68 @@ REAGENT SCANNER
 
 	user.visible_message("<span class='notice'>[user] analyzes [M]'s vitals.</span>", "<span class='notice'>You analyze [M]'s vitals.</span>")
 
+	add_fingerprint(user)
+
+	if(outputToChat == FALSE)
+		lastPatient = M
+		ui_interact(user)
+		return
+
 	healthscan(user, M, mode, advanced)
 
-	add_fingerprint(user)
+
+/obj/item/healthanalyzer/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
+	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+	if(!ui)
+		ui = new(user, src, ui_key, "HealthAnalyzer", name, 500, 600, master_ui, state)
+		ui.open()
+		ui.set_autoupdate(FALSE)
+
+/obj/item/healthanalyzer/ui_data(mob/user)
+	var/list/data = list()
+
+	data["name"] = lastPatient.name
+	data["stat"] = HAS_TRAIT(lastPatient, TRAIT_FAKEDEATH) ? DEAD : lastPatient.stat
+	data["health"] = lastPatient.health
+	data["maxHealth"] = lastPatient.maxHealth
+	data["dmgBrute"] = lastPatient.getBruteLoss()
+	data["dmgBurn"] = lastPatient.getFireLoss()
+	data["dmgOxy"] = lastPatient.getOxyLoss()
+	data["dmgToxin"] = lastPatient.getToxLoss()
+
+	var/bloodData[0]
+	bloodData["hasBlood"] = FALSE
+	if(!(NO_BLOOD in lastPatient.dna.species.species_traits))
+		bloodData["hasBlood"] = TRUE
+		bloodData["volume"] = lastPatient.blood_volume
+		bloodData["percent"] = round(((lastPatient.blood_volume / BLOOD_VOLUME_NORMAL)*100))
+		bloodData["pulse"] = lastPatient.get_pulse(GETPULSE_TOOL)
+
+		var/bloodStatusColor = "green"
+		var/bloodWarningMessage
+		if(lastPatient.blood_volume <= BLOOD_VOLUME_SAFE && lastPatient.blood_volume > BLOOD_VOLUME_OKAY)
+			bloodStatusColor = "orange"
+			bloodWarningMessage = " | LOW blood level"
+		else if(lastPatient.blood_volume <= BLOOD_VOLUME_OKAY)
+			bloodStatusColor = "red"
+			bloodWarningMessage = " | CRITICAL blood level"
+
+		bloodData["bloodStatusColor"] = bloodStatusColor
+		bloodData["bloodWarningMessage"] = bloodWarningMessage
+
+		//Copied shamelessly from the analyzer code below
+		var/blood_id = lastPatient.get_blood_id()
+		var/bloodType = lastPatient.dna.blood_type
+		if(blood_id != "blood")//special blood substance
+			var/datum/reagent/R = GLOB.chemical_reagents_list[blood_id]
+			if(R)
+				bloodType = R.name
+			else
+				bloodType = blood_id
+		bloodData["bloodType"] = bloodType
+
+	data["bloodData"] = bloodData
+	return data
 
 // Used by the PDA medical scanner too
 /proc/healthscan(mob/user, mob/living/M, mode = 1, advanced = FALSE)
