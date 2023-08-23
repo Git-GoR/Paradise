@@ -20,6 +20,7 @@ export const HealthAnalyzer = (props, context) => {
   const {
     name,
     stat,
+    dnr,
     health,
     maxHealth,
     dmgBrute,
@@ -37,7 +38,7 @@ export const HealthAnalyzer = (props, context) => {
             <LabeledList.Item label="Name">
               {name}
             </LabeledList.Item>
-            <LabeledList.Item label="Health 2.0">
+            <LabeledList.Item label="Health">
               {health >= 0 ? (
                 <ProgressBar
                   value={health / maxHealth}
@@ -46,28 +47,16 @@ export const HealthAnalyzer = (props, context) => {
                     average: [0.2, 0.7],
                     bad: [-Infinity, 0.2],
                   }}>
-                  {round(health,1)}%</ProgressBar>
+                  {round(health, 1)}%</ProgressBar>
               ) : (
                 <ProgressBar
                   value={1 + health / maxHealth}
                   ranges={{
                     bad: [-Infinity, Infinity],
                   }}>
-                  {round(health,1)}%</ProgressBar>     // Health text used so it shows negative while bar is full
+                  {round(health, 1)}%</ProgressBar>     // Health text used so it shows negative while bar is full
               )}
             </LabeledList.Item>
-            {/*             <LabeledList.Item label="Health">
-              <ProgressBar
-                min="0"
-                max={maxHealth}
-                value={health / maxHealth}
-                ranges={{
-                  good: [0.5, Infinity],
-                  average: [0, 0.5],
-                  bad: [-Infinity, 0],
-                }}
-              />
-            </LabeledList.Item> */}
             <LabeledList.Item label="Damage">
               <Box inline mr="5px">
                 <ProgressBar>
@@ -102,10 +91,10 @@ export const HealthAnalyzer = (props, context) => {
                 </ProgressBar>
               </Box>
             </LabeledList.Item>
-            <LabeledList.Item label="Blood">
+            <LabeledList.Item label={'Blood ' + (bloodData.bloodType ?? '')}>
               {bloodData.hasBlood ?
                 <Box color={bloodData.bloodStatusColor}>
-                  Type {bloodData.bloodType}, {bloodData.percent}%{bloodData.bloodWarningMessage}
+                  {bloodData.percent}%, {bloodData.volume}cl{bloodData.bloodWarningMessage}
                 </Box>
                 :
                 'No bloodstream detected in patient.'}

@@ -138,6 +138,7 @@ REAGENT SCANNER
 
 	data["name"] = lastPatient.name
 	data["stat"] = HAS_TRAIT(lastPatient, TRAIT_FAKEDEATH) ? DEAD : lastPatient.stat
+	data["dnr"] = !lastPatient.ghost_can_reenter()
 	data["health"] = lastPatient.health
 	data["maxHealth"] = lastPatient.maxHealth
 	data["dmgBrute"] = lastPatient.getBruteLoss()
